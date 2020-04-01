@@ -1,17 +1,10 @@
 import tkinter as tk
-
-
-class CPPInt:
-    def __init__(self, value: int):
-        self.value = value
-
-    def plusplus(self):
-        temp = self.value
-        self.value += 1
-        return temp
+from NameFrame import *
+from FileDescriptorWindowConstants import *
 
 
 class FileDescriptorWindow:
+
     def __init__(self):
         self.__window = None
 
@@ -19,15 +12,8 @@ class FileDescriptorWindow:
 
         self.__name_num_pages = 0
         self.__name_current_page = 0
+        self.__name_next_id = 0
         self.__name_frames = []
-
-        self.__tags_num_pages = 0
-        self.__tags_current_page = 0
-        self.__tags_frames = []
-
-        self.__ext_num_pages = 0
-        self.__ext_current_page = 0
-        self.__ext_frames = []
 
     def initialize(self):
         DIR_FRAME_ROW = 0
@@ -45,87 +31,54 @@ class FileDescriptorWindow:
 
         self.__directory_entry = tk.Entry(directory_frame, name="directory_entry")
         self.__directory_entry.insert(0, "C:/")
-        self.__directory_entry.bind("<Button-1>", lambda event: self.__directory_entry.delete(0, tk.END))
+        self.__directory_entry.bind(LEFT_CLICK, lambda event: self.__directory_entry.delete(0, tk.END))
         self.__directory_entry.grid(row=DIR_FRAME_ROW, column=1, padx=2)
 
         directory_button = tk.Button(directory_frame, name="directory_button")
         directory_button.grid(row=DIR_FRAME_ROW, column=2, padx=2, sticky=tk.E)
 
         # 2. Name Frame
-        self.__create_name_frame(0)
+        self.__create_name_frame()
 
         # 3. Go
         go_button = tk.Button(self.__window, name="go_button", text="GO")
         go_button.grid(row=GO_ROW, padx=2, pady=7)
 
-    def __next_name_click(self, event):
+    def next_name_click(self, event):
+        if event.widget["state"] == tk.DISABLED:
+            return
         if self.__name_current_page == self.__name_num_pages:
-            self.__name_current_page += 1
-            self.__create_name_frame(self.__name_current_page)
             self.__name_num_pages += 1
+            self.__create_name_frame()
+        self.__name_frames[self.__name_current_page].hide()
+        self.__name_current_page += 1
+        self.__name_frames[self.__name_current_page].show()
 
-    def __create_name_frame(self, number):
-        NAME_FRAME_ROW = 1
+    def prev_name_click(self, event):
+        if self.__name_current_page <= 0 or event.widget["state"] == tk.DISABLED:
+            return
+        name_frame = self.__name_frames[self.__name_current_page]
+        should_destroy = name_frame.is_empty()
 
-        name_frame = tk.Frame(self.__window, name="name_frame#" + str(number))
-        name_frame.grid(row=NAME_FRAME_ROW, pady=2)
+        if should_destroy:
+            self.__name_frames[self.__name_current_page].destroy()
+            self.__name_frames.pop(self.__name_current_page)
+            self.__name_num_pages -= 1
+        else:
+            self.__name_frames[self.__name_current_page].hide()
 
-        # 2.1 Name Controls Frame
-        name_controls_frame = tk.Frame(name_frame, name="name_controls_frame")
-        name_controls_frame.grid(row=0, pady=2)
+        self.__name_current_page -= 1
+        self.__name_frames[self.__name_current_page].show()
 
-        prev_name_button = tk.Button(name_controls_frame, name="prev_name_button", text="<<",
-                                     state=tk.DISABLED if self.__name_current_page < 1 else tk.NORMAL)
-        prev_name_button.grid(row=0, column=0, padx=2, sticky=tk.W)
+    def __create_name_frame(self):
+        name_frame = NameFrame(self.__name_next_id, self)
+        self.__name_next_id += 1
 
-        name_entry = tk.Entry(name_controls_frame, name="name_entry")
-        name_entry.insert(0, "Name" + str(number))
-        name_entry.bind("<Button-1>", lambda event: name_entry.delete(0, tk.END))
-        name_entry.grid(row=0, column=1, padx=2)
-
-        next_name_button = tk.Button(name_controls_frame, name="next_name_button", text=">>")
-        next_name_button.bind("<Button-1>", self.__next_name_click)
-        next_name_button.grid(row=0, column=2, padx=2, sticky=tk.E)
-
-        # 2.2 Tag Frame
-        tag_frame = self.__create_input_frame(name_frame, "Tags", (1, 0), 5, 2)
-        self.__tags_frames.append([])
-        self.__tags_frames[self.__name_current_page].append(tag_frame)
-
-        # 2.3 Extension Frame
-        ext_frame = self.__create_input_frame(name_frame, "Extensions", (2, 0), 3, 2)
-        self.__ext_frames.append([])
-        self.__ext_frames[self.__name_current_page].append(ext_frame)
+        name_frame.initialize(self.__window, row=1)
 
         self.__name_frames.append(name_frame)
 
-    @staticmethod
-    def __create_input_frame(parent, name, position, rows, columns, page_num=0):
-        frame = tk.Frame(parent, name=name.lower() + "_frame#" + str(page_num))
-        frame.grid(row=position[0], column=position[1], pady=1)
-        tk.Label(frame, text=name).grid(row=0, sticky=tk.W)
-
-        entry_frame = tk.Frame(frame, name="entry_frame")
-        entry_frame.grid(row=1, pady=1)
-        for row in range(1, rows + 1):
-            for col in range(columns):
-                entry = tk.Entry(entry_frame, name="entry#" + str((row - 1) * columns + col))
-                entry.grid(row=row, column=col, padx=7, pady=2)
-
-        controls_frame = tk.Frame(frame, name="controls_frame")
-        controls_frame.grid(row=2, pady=1)
-
-        prev_button = tk.Button(controls_frame, name="prev_button", text="<<",
-                                state=tk.DISABLED if page_num < 1 else tk.NORMAL)
-        prev_button.grid(row=0, column=0, padx=2, sticky=tk.W)
-        tk.Label(controls_frame, text=page_num, name="page_num").grid(row=0, column=1)
-        next_button = tk.Button(controls_frame, name="next_button", text=">>")
-        next_button.grid(row=0, column=2, padx=2, sticky=tk.E)
-
-        return frame
-
     def start(self):
-        error = False
         try:
             self.__window.mainloop()
         except AttributeError:
