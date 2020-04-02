@@ -6,8 +6,8 @@ from FileDescriptorWindowConstants import *
 class EntryFrame:
     def __init__(self, id_, parent):
         self.__id = str(id_)
-        self.__parent = parent
-        self.page_num = 0
+        self.parent = parent
+        self.page_num = tk.StringVar()
         self.__frame = None
 
     def is_empty(self):
@@ -35,25 +35,34 @@ class EntryFrame:
 
         prev_button = tk.Button(controls_frame, name=PREV_BUTTON,
                                 text=PREV_BUTTON_TEXT,
-                                state=tk.DISABLED if page_num < 1 else tk.NORMAL)
-        prev_button.bind(LEFT_CLICK, prev_function)
+                                state=tk.DISABLED if page_num < 1 else tk.NORMAL,
+                                command=prev_function)
         prev_button.grid(row=0, column=0, padx=2, sticky=tk.W)
 
-        tk.Label(controls_frame, text=page_num, name="page_num").grid(row=0, column=1)
-        self.page_num = page_num
+        self.page_num.set(page_num)
+        tk.Label(controls_frame, textvariable=self.page_num, name="page_num").grid(row=0, column=1)
 
         next_button = tk.Button(controls_frame, name=NEXT_BUTTON,
-                                text=NEXT_BUTTON_TEXT)
-        prev_button.bind(LEFT_CLICK, next_function)
+                                text=NEXT_BUTTON_TEXT,
+                                command=next_function)
         next_button.grid(row=0, column=2, padx=2, sticky=tk.E)
 
     def get(self):
         return self.__frame
 
     def update_page_num(self, num):
-        self.page_num = num
+        self.page_num.set(num)
+        controls_frame = self.__frame.children[CONTROL_FRAME]
         if num > 0:
-            self.__frame.children[PREV_BUTTON]["state"] = tk.NORMAL
+            controls_frame.children[PREV_BUTTON]["state"] = tk.NORMAL
         else:
-            self.__frame.children[PREV_BUTTON]["state"] = tk.DISABLED
-        self.__frame.children["page_num"].set(str(num))
+            controls_frame.children[PREV_BUTTON]["state"] = tk.DISABLED
+
+    def hide(self):
+        self.__frame.grid_remove()
+
+    def show(self):
+        self.__frame.grid()
+
+    def destroy(self):
+        self.__frame.destroy()

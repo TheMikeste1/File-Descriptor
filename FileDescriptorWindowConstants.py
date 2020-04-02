@@ -1,6 +1,6 @@
 LEFT_CLICK = "<Button-1>"
 
-NAMES_CONTROL_FRAME = "name_controls_frame"
+CONTROL_FRAME = "controls_frame"
 NAME_FRAME = "name_frame"
 NAME_ENTRY = "name_entry"
 
