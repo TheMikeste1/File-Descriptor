@@ -1,12 +1,18 @@
 import tkinter as tk
+import xml.etree.ElementTree as Et
+import calendar
+import time
 
+from os import listdir
+from os.path import isfile, join
 from tkinter import filedialog
 from NameFrame import NameFrame
 from FileDescriptorWindowConstants import *
 
+VERSION = "0.5"
+
 
 class FileDescriptorWindow:
-
     def __init__(self):
         self.__window = None
 
@@ -42,13 +48,94 @@ class FileDescriptorWindow:
         self.__create_name_frame()
 
         # 3. Go
-        go_button = tk.Button(self.__window, name="go_button", text="GO")
+        go_button = tk.Button(self.__window, name="go_button", text="GO", command=self.save)
         go_button.grid(row=GO_ROW, padx=2, pady=7)
 
     def get_directory(self):
         directory = filedialog.askdirectory(initialdir="/", title="Select file")
+        directory = "D:/Projects/Learner\'s Repository/Code/Point3D"
+        if directory == "":
+            return
         self.__directory_entry.delete(0, tk.END)
         self.__directory_entry.insert(0, directory)
+
+        meta_exists = False
+        for f in listdir(directory):
+            if isfile(join(directory, f)) and f == "meta.xml":
+                meta_exists = True
+                break
+        if meta_exists:
+            self.load_meta(directory + "/")
+        else:
+            # TODO: Walk through and add file extensions and names automatically
+            self.scan_directory(directory + "/")
+
+    def scan_directory(self, directory):
+        pass
+
+    def load_meta(self, directory):
+        for frame in self.__name_frames:
+            frame.destroy()
+        self.__name_frames.clear()
+        self.__name_num_pages = 0
+        self.__name_current_page = 0
+        self.__name_next_id = 0
+
+        tree = Et.parse(directory + "meta.xml")
+        meta = tree.getroot()
+
+        for code in meta.findall("./code"):
+            name_frame = self.__create_name_frame()
+            name_frame.get().children[CONTROL_FRAME].children[NAME_ENTRY].delete(0, tk.END)
+            name_frame.get().children[CONTROL_FRAME].children[NAME_ENTRY].insert(0, code.attrib["name"])
+            name_frame.load_tags(code.findall("./tag"))
+            name_frame.load_ext(code.findall("./extension"))
+
+    def save(self):
+        directory = self.__directory_entry.get() + "/"
+        meta_exists = False
+        for f in listdir(directory):
+            if isfile(join(directory, f)) and f == "meta.xml":
+                meta_exists = True
+                break
+        if meta_exists:
+            self.update(directory)
+        else:
+            self.create(directory)
+
+    def create(self, directory):
+        timestamp = str(calendar.timegm(time.gmtime()))
+
+        meta = Et.Element("meta", timestamp=timestamp, version=VERSION)
+        for name in self.__name_frames:
+            # if name.is_empty():
+            #     continue
+            entry = name.get().children[CONTROL_FRAME].children[NAME_ENTRY]
+            code = Et.SubElement(meta, "code", name=entry.get(), timestamp=timestamp)
+            for tag_frame in name.get_tag_frames():
+                entry_frame = tag_frame.get().children["entry_frame"]
+                for entry_key in entry_frame.children:
+                    entry = entry_frame.children[entry_key]
+                    val = entry.get()
+                    if val != "":
+                        val = "_".join(val.split()).lower()
+                        Et.SubElement(code, "tag").text = val
+            for ext_frame in name.get_ext_frames():
+                entry_frame = ext_frame.get().children["entry_frame"]
+                for entry_key in entry_frame.children:
+                    entry = entry_frame.children[entry_key]
+                    val = entry.get()
+                    if val != "":
+                        if val[0] == ".":
+                            val = val[1:]
+                        Et.SubElement(code, "extension").text = val
+
+        Et.ElementTree(meta).write(directory + "meta.xml")
+        return
+
+    def update(self, directory):
+        # TODO: Make this actually work
+        self.create(directory)
 
     def next_name_click(self):
         if self.__name_current_page == self.__name_num_pages:
@@ -84,6 +171,7 @@ class FileDescriptorWindow:
                               prev_function=self.prev_name_click, next_function=self.next_name_click)
 
         self.__name_frames.append(name_frame)
+        return name_frame
 
     def start(self):
         try:

@@ -148,6 +148,15 @@ class NameFrame:
     def destroy(self):
         self.__frame.destroy()
 
+    def get(self):
+        return self.__frame
+
+    def get_tag_frames(self):
+        return self.__tags_frames
+
+    def get_ext_frames(self):
+        return self.__ext_frames
+
     def update_page_num(self, num):
         self.page_num.set(num)
         control_frame = self.__frame.children[CONTROL_FRAME]
@@ -155,3 +164,40 @@ class NameFrame:
             control_frame.children[PREV_BUTTON]["state"] = tk.NORMAL
         else:
             control_frame.children[PREV_BUTTON]["state"] = tk.DISABLED
+
+    def load_tags(self, tags):
+        for frame in self.__tags_frames:
+            frame.destroy()
+        self.__tags_frames.clear()
+        self.__tags_num_pages = 0
+        self.__tags_current_page = 0
+        self.__tags_next_id = 0
+
+        for tag_i in range(len(tags)):
+            text = tags[tag_i].text
+            if tag_i % 10 == 0:
+                self.__create_tag_frame()
+                entry_frame = self.__tags_frames[tag_i // 10].get().children["entry_frame"]
+                keys = list(entry_frame.children.keys())
+            entry_frame.children[keys[tag_i % 10]].insert(0, text)
+            
+    def load_ext(self, ext):
+        for frame in self.__ext_frames:
+            frame.destroy()
+        self.__ext_frames.clear()
+        self.__ext_num_pages = 0
+        self.__ext_current_page = 0
+        self.__ext_next_id = 0
+
+        for tag_i in range(len(ext)):
+            text = ext[tag_i].text
+            if text[0] == ".":
+                text = text[1:]
+            if tag_i % 10 == 0:
+                self.__create_ext_frame()
+                entry_frame = self.__ext_frames[tag_i // 10].get().children["entry_frame"]
+                keys = list(entry_frame.children.keys())
+            entry_frame.children[keys[tag_i % 10]].insert(0, text)
+
+
+
