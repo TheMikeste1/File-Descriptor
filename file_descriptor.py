@@ -1,3 +1,4 @@
+import os
 import tkinter as tk
 import xml.etree.ElementTree as Et
 import calendar
@@ -45,7 +46,7 @@ class FileDescriptorWindow:
         directory_button.grid(row=DIR_FRAME_ROW, column=2, padx=2, sticky=tk.E)
 
         # 2. Name Frame
-        self.__create_name_frame()
+        self.__create_name_frame().show()
 
         # 3. Go
         go_button = tk.Button(self.__window, name="go_button", text="GO", command=self.save)
@@ -53,7 +54,6 @@ class FileDescriptorWindow:
 
     def get_directory(self):
         directory = filedialog.askdirectory(initialdir="/", title="Select file")
-        directory = "D:/Projects/Learner\'s Repository/Code/Point3D"
         if directory == "":
             return
         self.__directory_entry.delete(0, tk.END)
@@ -64,16 +64,13 @@ class FileDescriptorWindow:
             if isfile(join(directory, f)) and f == "meta.xml":
                 meta_exists = True
                 break
+        # TODO: Add checkboxes to enable/disable these
         if meta_exists:
             self.load_meta(directory + "/")
         else:
-            # TODO: Walk through and add file extensions and names automatically
             self.scan_directory(directory + "/")
 
-    def scan_directory(self, directory):
-        pass
-
-    def load_meta(self, directory):
+    def purge(self):
         for frame in self.__name_frames:
             frame.destroy()
         self.__name_frames.clear()
@@ -81,6 +78,29 @@ class FileDescriptorWindow:
         self.__name_current_page = 0
         self.__name_next_id = 0
 
+    def scan_directory(self, directory):
+        self.purge()
+
+        file_list = {}
+        for path, subdirs, files in os.walk(directory):
+            for file in files:
+                split = file.split(".")
+                name = ".".join(split[0:-1])
+                ext = split[-1]
+                if name in file_list:
+                    file_list[name].append(ext)
+                else:
+                    file_list[name] = [ext]
+        for file in file_list:
+            name_frame = self.__create_name_frame()
+            self.__name_num_pages += 1
+            name_frame.set_text(file)
+            name_frame.load_ext(file_list[file])
+        self.__name_frames[0].show()
+        self.__name_num_pages -= 1
+
+    def load_meta(self, directory):
+        self.purge()
         tree = Et.parse(directory + "meta.xml")
         meta = tree.getroot()
 
@@ -88,8 +108,10 @@ class FileDescriptorWindow:
             name_frame = self.__create_name_frame()
             name_frame.get().children[CONTROL_FRAME].children[NAME_ENTRY].delete(0, tk.END)
             name_frame.get().children[CONTROL_FRAME].children[NAME_ENTRY].insert(0, code.attrib["name"])
-            name_frame.load_tags(code.findall("./tag"))
-            name_frame.load_ext(code.findall("./extension"))
+            tags = [tag.text for tag in code.findall("./tag")]
+            name_frame.load_tags(tags)
+            exts = [ext.text for ext in code.findall("./extension")]
+            name_frame.load_ext(exts)
 
     def save(self):
         directory = self.__directory_entry.get() + "/"
@@ -108,8 +130,8 @@ class FileDescriptorWindow:
 
         meta = Et.Element("meta", timestamp=timestamp, version=VERSION)
         for name in self.__name_frames:
-            # if name.is_empty():
-            #     continue
+            if name.is_empty():
+                continue
             entry = name.get().children[CONTROL_FRAME].children[NAME_ENTRY]
             code = Et.SubElement(meta, "code", name=entry.get(), timestamp=timestamp)
             for tag_frame in name.get_tag_frames():
@@ -169,6 +191,7 @@ class FileDescriptorWindow:
 
         name_frame.initialize(self.__window, page_num=self.__name_num_pages, row=1,
                               prev_function=self.prev_name_click, next_function=self.next_name_click)
+        name_frame.hide()
 
         self.__name_frames.append(name_frame)
         return name_frame

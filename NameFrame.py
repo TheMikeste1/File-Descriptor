@@ -166,6 +166,41 @@ class NameFrame:
             control_frame.children[PREV_BUTTON]["state"] = tk.DISABLED
 
     def load_tags(self, tags):
+        self.purge_tags()
+        for tag_i in range(len(tags)):
+            text = tags[tag_i]
+            if tag_i % 10 == 0:
+                self.__create_tag_frame()
+                entry_frame = self.__tags_frames[tag_i // 10].get().children["entry_frame"]
+                keys = list(entry_frame.children.keys())
+            entry_frame.children[keys[tag_i % 10]].insert(0, text)
+            
+    def load_ext(self, exts):
+        self.purge_ext()
+        for tag_i in range(len(exts)):
+            text = exts[tag_i]
+            if text[0] == ".":
+                text = text[1:]
+            if tag_i % 6 == 0:
+                self.__create_ext_frame()
+                entry_frame = self.__ext_frames[tag_i // 6].get().children["entry_frame"]
+                keys = list(entry_frame.children.keys())
+            entry_frame.children[keys[tag_i % 6]].insert(0, text)
+
+    def set_text(self, text):
+        name_entry = self.__frame.children[CONTROL_FRAME].children[NAME_ENTRY]
+        name_entry.delete(0, tk.END)
+        name_entry.insert(0, text)
+
+    def purge(self):
+        self.purge_tags()
+        self.purge_ext()
+
+        self.page_num = tk.StringVar()
+        self.next_enabled = tk.StringVar(value=tk.NORMAL)
+        self.prev_enabled = tk.StringVar(value=tk.DISABLED)
+
+    def purge_tags(self):
         for frame in self.__tags_frames:
             frame.destroy()
         self.__tags_frames.clear()
@@ -173,31 +208,10 @@ class NameFrame:
         self.__tags_current_page = 0
         self.__tags_next_id = 0
 
-        for tag_i in range(len(tags)):
-            text = tags[tag_i].text
-            if tag_i % 10 == 0:
-                self.__create_tag_frame()
-                entry_frame = self.__tags_frames[tag_i // 10].get().children["entry_frame"]
-                keys = list(entry_frame.children.keys())
-            entry_frame.children[keys[tag_i % 10]].insert(0, text)
-            
-    def load_ext(self, ext):
+    def purge_ext(self):
         for frame in self.__ext_frames:
             frame.destroy()
         self.__ext_frames.clear()
         self.__ext_num_pages = 0
         self.__ext_current_page = 0
         self.__ext_next_id = 0
-
-        for tag_i in range(len(ext)):
-            text = ext[tag_i].text
-            if text[0] == ".":
-                text = text[1:]
-            if tag_i % 10 == 0:
-                self.__create_ext_frame()
-                entry_frame = self.__ext_frames[tag_i // 10].get().children["entry_frame"]
-                keys = list(entry_frame.children.keys())
-            entry_frame.children[keys[tag_i % 10]].insert(0, text)
-
-
-
