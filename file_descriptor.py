@@ -10,14 +10,17 @@ from tkinter import filedialog
 from NameFrame import NameFrame
 from FileDescriptorWindowConstants import *
 
+# TODO: Documentation and reorganize
 VERSION = "0.5"
 
 
 class FileDescriptorWindow:
     def __init__(self):
-        self.__window = None
+        self.__window = tk.Tk(screenName="File Descriptor")
 
         self.__directory_entry = None
+
+        self.enable_load = tk.BooleanVar(value=True)
 
         self.__name_num_pages = 0
         self.__name_current_page = 0
@@ -29,7 +32,6 @@ class FileDescriptorWindow:
         GO_ROW = 2
 
         # Initialize window
-        self.__window = tk.Tk(screenName="File Descriptor")
         self.__window.title("File Descriptor")
 
         # 1. Directory Frame
@@ -44,13 +46,18 @@ class FileDescriptorWindow:
 
         directory_button = tk.Button(directory_frame, name="directory_button", text="F", command=self.get_directory)
         directory_button.grid(row=DIR_FRAME_ROW, column=2, padx=2, sticky=tk.E)
+        tk.Checkbutton(directory_frame, name="enable_load_checkbox", text="Load", variable=self.enable_load) \
+            .grid(row=0, column=3)
 
         # 2. Name Frame
         self.__create_name_frame().show()
 
-        # 3. Go
+        # 3. Bottom Controls
         go_button = tk.Button(self.__window, name="go_button", text="GO", command=self.save)
-        go_button.grid(row=GO_ROW, padx=2, pady=7)
+        go_button.grid(row=GO_ROW, column=0, padx=2, pady=7)
+        clear_button = tk.Button(self.__window, name="clear_button", text="CLEAR",
+                                 command=self.reload)
+        clear_button.grid(row=GO_ROW, column=1, padx=2, pady=7)
 
     def get_directory(self):
         directory = filedialog.askdirectory(initialdir="/", title="Select file")
@@ -59,16 +66,16 @@ class FileDescriptorWindow:
         self.__directory_entry.delete(0, tk.END)
         self.__directory_entry.insert(0, directory)
 
-        meta_exists = False
-        for f in listdir(directory):
-            if isfile(join(directory, f)) and f == "meta.xml":
-                meta_exists = True
-                break
-        # TODO: Add checkboxes to enable/disable these
-        if meta_exists:
-            self.load_meta(directory + "/")
-        else:
-            self.scan_directory(directory + "/")
+        if self.enable_load.get():
+            meta_exists = False
+            for f in listdir(directory):
+                if isfile(join(directory, f)) and f == "meta.xml":
+                    meta_exists = True
+                    break
+            if meta_exists:
+                self.load_meta(directory + "/")
+            else:
+                self.scan_directory(directory + "/")
 
     def purge(self):
         for frame in self.__name_frames:
@@ -77,6 +84,10 @@ class FileDescriptorWindow:
         self.__name_num_pages = 0
         self.__name_current_page = 0
         self.__name_next_id = 0
+
+    def reload(self):
+        self.purge()
+        self.__create_name_frame().show()
 
     def scan_directory(self, directory):
         self.purge()
@@ -106,12 +117,14 @@ class FileDescriptorWindow:
 
         for code in meta.findall("./code"):
             name_frame = self.__create_name_frame()
-            name_frame.get().children[CONTROL_FRAME].children[NAME_ENTRY].delete(0, tk.END)
-            name_frame.get().children[CONTROL_FRAME].children[NAME_ENTRY].insert(0, code.attrib["name"])
+            self.__name_num_pages += 1
+            name_frame.set_text(code.attrib["name"])
             tags = [tag.text for tag in code.findall("./tag")]
             name_frame.load_tags(tags)
             exts = [ext.text for ext in code.findall("./extension")]
             name_frame.load_ext(exts)
+        self.__name_frames[0].show()
+        self.__name_num_pages -= 1
 
     def save(self):
         directory = self.__directory_entry.get() + "/"
@@ -128,7 +141,7 @@ class FileDescriptorWindow:
     def create(self, directory):
         timestamp = str(calendar.timegm(time.gmtime()))
 
-        meta = Et.Element("meta", timestamp=timestamp, version=VERSION)
+        meta = Et.Element("meta", timestamp=timestamp)
         for name in self.__name_frames:
             if name.is_empty():
                 continue
