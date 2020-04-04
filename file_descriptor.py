@@ -17,6 +17,7 @@ VERSION = "0.5"
 class FileDescriptorWindow:
     def __init__(self):
         self.__window = tk.Tk(screenName="File Descriptor")
+        self.__window.resizable(False, False)
 
         self.__directory_entry = None
 
@@ -41,7 +42,7 @@ class FileDescriptorWindow:
         tk.Label(directory_frame, text="Directory:").grid(row=0)
 
         self.__directory_entry = tk.Entry(directory_frame, name="directory_entry")
-        self.__directory_entry.insert(0, "C:/")
+        self.__directory_entry.insert(0, "C:\\Documents")
         self.__directory_entry.grid(row=DIR_FRAME_ROW, column=1, padx=2)
 
         directory_button = tk.Button(directory_frame, name="directory_button", text="F", command=self.get_directory)
@@ -53,11 +54,13 @@ class FileDescriptorWindow:
         self.__create_name_frame().show()
 
         # 3. Bottom Controls
-        go_button = tk.Button(self.__window, name="go_button", text="GO", command=self.save)
-        go_button.grid(row=GO_ROW, column=0, padx=2, pady=7)
-        clear_button = tk.Button(self.__window, name="clear_button", text="CLEAR",
+        bottom_control_frame = tk.Frame(self.__window, name="bottom_control_frame")
+        go_button = tk.Button(bottom_control_frame, name="go_button", text="GO", command=self.save)
+        go_button.grid(row=0, column=0, padx=2, pady=7)
+        clear_button = tk.Button(bottom_control_frame, name="clear_button", text="CLEAR",
                                  command=self.reload)
-        clear_button.grid(row=GO_ROW, column=1, padx=2, pady=7)
+        clear_button.grid(row=0, column=1, padx=2, pady=7, sticky=tk.E)
+        bottom_control_frame.grid(row=GO_ROW)
 
     def get_directory(self):
         directory = filedialog.askdirectory(initialdir="/", title="Select file")
