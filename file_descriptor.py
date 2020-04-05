@@ -145,28 +145,36 @@ class FileDescriptorWindow:
         timestamp = str(calendar.timegm(time.gmtime()))
 
         meta = Et.Element("meta", timestamp=timestamp)
+        codes = []
+        tags = []
+        exts = []
         for name in self.__name_frames:
             if name.is_empty():
                 continue
-            entry = name.get().children[CONTROL_FRAME].children[NAME_ENTRY]
-            code = Et.SubElement(meta, "code", name=entry.get(), timestamp=timestamp)
+            entry = name.get().children[CONTROL_FRAME].children[NAME_ENTRY].get()
+            if entry in codes:
+                continue
+            codes.append(entry)
+            code = Et.SubElement(meta, "code", name=entry, timestamp=timestamp)
             for tag_frame in name.get_tag_frames():
                 entry_frame = tag_frame.get().children["entry_frame"]
                 for entry_key in entry_frame.children:
                     entry = entry_frame.children[entry_key]
                     val = entry.get()
-                    if val != "":
-                        val = "_".join(val.split()).lower()
+                    if val != "" and val not in tags:
+                        val = "_".join(val.split()).lower().strip()
                         Et.SubElement(code, "tag").text = val
             for ext_frame in name.get_ext_frames():
                 entry_frame = ext_frame.get().children["entry_frame"]
                 for entry_key in entry_frame.children:
                     entry = entry_frame.children[entry_key]
-                    val = entry.get()
+                    val = entry.get().strip()
                     if val != "":
                         if val[0] == ".":
                             val = val[1:]
-                        Et.SubElement(code, "extension").text = val
+                        if val not in exts:
+                            exts.append(val)
+                            Et.SubElement(code, "extension").text = val
 
         Et.ElementTree(meta).write(directory + "meta.xml")
         return
